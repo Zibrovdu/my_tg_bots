@@ -1,11 +1,12 @@
 import random
 
 from aiogram import Router
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message
 from aiogram.filters import Command, CommandStart
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 from lexicon.lexicon import LEXICON
+from service.service import bot_choice, get_winner
 
 r = Router()
 
@@ -41,18 +42,15 @@ async def user_answer_yes(message: Message, kb_game: ReplyKeyboardBuilder):
 
 @r.message(lambda msg: msg.text in [LEXICON['stone'], LEXICON['paper'], LEXICON['scissors']])
 async def user_in_game(message: Message, kb: ReplyKeyboardBuilder):
-    bot_choice = random.choice([LEXICON['stone'], LEXICON['paper'], LEXICON['scissors']])
-    if bot_choice == message.text:
+    bot = bot_choice()
+    if bot == message.text:
         await message.answer(
             text=LEXICON['draw'],
             reply_markup=kb.as_markup(
                 resize_keyboard=True,
                 one_time_keyboard=True))
     else:
-        if (
-                message.text == LEXICON['stone'] and bot_choice == LEXICON['scissors']) or (
-                message.text == LEXICON['paper'] and bot_choice == LEXICON['stone']) or (
-                message.text == LEXICON['scissors'] and bot_choice == LEXICON['paper']):
+        if get_winner(message.text, bot) == 'user_win':
             await message.answer(
                 text=LEXICON['user_win']
             )
@@ -60,7 +58,7 @@ async def user_in_game(message: Message, kb: ReplyKeyboardBuilder):
             await message.answer(text=LEXICON['user_miss'])
 
     await message.answer(
-        text=f'Пользователь выбрал: {message.text}, бот выбрал: {bot_choice}'
+        text=f'Пользователь выбрал: {message.text}, бот выбрал: {bot}'
     )
     await message.answer(
         text=LEXICON['new_game'],
